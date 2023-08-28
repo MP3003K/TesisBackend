@@ -53,7 +53,7 @@ namespace Application.Features.RespuestaPsicologica.Queries
             return new Response<IList<EscalaPsicologicaDto>>(escalasPsicologicasDto);
         }
 
-        private void CalcularResultadosEvaluacionPsicologica(IList<EscalaPsicologicaDto> escalasPsicologicasDto)
+        private static void CalcularResultadosEvaluacionPsicologica(IList<EscalaPsicologicaDto> escalasPsicologicasDto)
         {
             foreach (var escalaDto in escalasPsicologicasDto)
             {

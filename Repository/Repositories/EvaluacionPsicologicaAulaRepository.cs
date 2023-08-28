@@ -52,33 +52,5 @@ namespace Repository.Repositories
             return listaEstudiantes;
         }
 
-        public async Task<EvaluacionPsicologicaAula?> ResultadosEvalucionPsicologicaAula( int evaPsiId, int evaPsiAulaId, int unidadId)
-        {
-            var evaluacionPsicologicaAula = await Table
-                .Include(epa => epa.EvaluacionPsicologica)
-                .Where(ep => ep.EvaluacionPsicologica.DimensionesPsicologicas.Any())
-                .Include(ep => ep.EvaluacionPsicologica.DimensionesPsicologicas.Where(x => x.Id ==1))
-                .ThenInclude(d => d.EscalasPsicologicas)
-                .ThenInclude(e => e.IndicadoresPsicologicos)
-                .ThenInclude(i => i.PreguntasPsicologicas)
-                .ThenInclude(p => p.RespuestasPsicologicas)
-                .Where(epa => epa.EvaluacionPsicologica.DimensionesPsicologicas.Any(x => x.Id == 1))
-                .Where(epa => epa.EvaluacionPsicologica.Id == evaPsiId && epa.Id == evaPsiAulaId && epa.UnidadId == unidadId)
-                .FirstOrDefaultAsync();
-
-            var evaluacionPsicologicaAula2 = await Table
-                .Include(epa => epa.EvaluacionPsicologica)
-                .Where(ep => ep.EvaluacionPsicologica.DimensionesPsicologicas.Any())
-                .Include(ep => ep.EvaluacionPsicologica.DimensionesPsicologicas.Where(x => x.Id == 1))
-                .ThenInclude(d => d.EscalasPsicologicas)
-                .ThenInclude(e => e.IndicadoresPsicologicos)
-                .ThenInclude(i => i.PreguntasPsicologicas)
-                .ThenInclude(p => p.RespuestasPsicologicas)
-                .Where(epa => epa.EvaluacionPsicologica.DimensionesPsicologicas.Any(x => x.Id == 1))
-                .Where(epa => epa.EvaluacionPsicologica.Id == evaPsiId && epa.Id == evaPsiAulaId && epa.UnidadId == unidadId)
-                .FirstOrDefaultAsync();
-
-            return evaluacionPsicologicaAula;
-        }
     }
 }

@@ -24,7 +24,11 @@ namespace Repository.Repositories
                 .Select(epe => epe.Id)
                 .FirstOrDefaultAsync();
         }
-
+        public Task<EvaluacionPsicologicaEstudiante?> EvaPsiEstudiante(int estudianteId, int unidadId, int aulaId)
+        {
+            // Falta implementar :c
+            throw new NotImplementedException();
+        }
 
         public async Task<IList<Aula>?> ListaAulasDeEvaPsiEstPorIdEstudiante(int estudianteId)
         {
@@ -73,5 +77,7 @@ namespace Repository.Repositories
             else
                 return Task.FromResult(false);
         }
+
+
     }
 }
