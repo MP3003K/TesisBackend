@@ -1,5 +1,4 @@
-﻿using Application.Exceptions;
-using Application.Wrappers;
+﻿using Application.Wrappers;
 using AutoMapper;
 using Contracts.Repositories;
 using Domain.Entities;
@@ -17,57 +16,67 @@ namespace Application.Features.RespuestaPsicologica.Queries
     public class ResultadosPsicologicosEstudiantesQuery: IRequest<Response<RespuestasEstudianteDto>>
     {
         public int EstudianteId { get; set; }
-        public int UnidadId { get; set; }
-
-        public int AulaId { get; set; }
         public int DimensionId { get; set; }
-
+        public int UnidadId { get; set; }
     }
     public class ResultadosPsicologicosEstudiantesHandler: IRequestHandler<ResultadosPsicologicosEstudiantesQuery, Response<RespuestasEstudianteDto>>
     {
-        private readonly IEvaluacionPsicologicaRepository _evaluacionPsicologicaRepository;
+        private readonly IEstudianteAulaRepository _estudianteAulaRepository;
+        private readonly IAulaRepository _aulaRepository;
+        private readonly IGradoEvaPsicologicaRepository _gradoEvaPsicologicaRepository;
+        private readonly IIndicadorPsicologicoRepository _indicadorPsicologicoRepository;
+        private readonly IEscalaPsicologicaRepository _escalaPsicologicaRepository;
         private readonly IEvaluacionPsicologicaEstudianteRepository _evaluacionPsicologicaEstudianteRepository;
         private readonly IEvaluacionPsicologicaAulaRepository _evaluacionPsicologicaAulaRepository;
+        private readonly IUnidadRepository _unidadRepository; 
         private readonly IMapper _mapper;
-        
+
         public ResultadosPsicologicosEstudiantesHandler(
-            IEvaluacionPsicologicaRepository evaluacionPsicologicaRepository,
-            IEvaluacionPsicologicaAulaRepository evaluacionPsicologicaAulaRepository,
+            IEstudianteAulaRepository estudianteAulaRepository,
+            IAulaRepository aulaRepository,
+            IGradoEvaPsicologicaRepository gradoEvaPsicologicaRepository,
+            IIndicadorPsicologicoRepository indicadorPsicologicoRepository,
+            IEscalaPsicologicaRepository escalaPsicologicaRepository,
             IEvaluacionPsicologicaEstudianteRepository evaluacionPsicologicaEstudianteRepository,
+            IEvaluacionPsicologicaAulaRepository evaluacionPsicologicaAulaRepository,
+            IUnidadRepository unidadRepository,
             IMapper mapper)
         {
-            _evaluacionPsicologicaRepository = evaluacionPsicologicaRepository;
-            _evaluacionPsicologicaAulaRepository = evaluacionPsicologicaAulaRepository;
+            _estudianteAulaRepository = estudianteAulaRepository;
+            _aulaRepository = aulaRepository;
+            _gradoEvaPsicologicaRepository = gradoEvaPsicologicaRepository;
+            _indicadorPsicologicoRepository = indicadorPsicologicoRepository;
+            _escalaPsicologicaRepository = escalaPsicologicaRepository;
             _evaluacionPsicologicaEstudianteRepository = evaluacionPsicologicaEstudianteRepository;
+            _evaluacionPsicologicaAulaRepository = evaluacionPsicologicaAulaRepository;
+            _unidadRepository = unidadRepository;
             _mapper = mapper;
         }
         public async Task<Response<RespuestasEstudianteDto>> Handle(ResultadosPsicologicosEstudiantesQuery request, CancellationToken cancellationToken)
         {
-            var evaPsiAula = await _evaluacionPsicologicaAulaRepository.EvaPsiAulaPorAulaIdYUnidadId(request.AulaId, request.UnidadId) ?? throw new EntidadNoEncontradaException(nameof(EvaluacionPsicologicaAula));
-            var evaPsiEstId = await _evaluacionPsicologicaEstudianteRepository.EvaPsiEstudianteIdPorEstudianteId(evaPsiAula.Id, request.EstudianteId) ?? throw new EntidadNoEncontradaException(nameof(EvaluacionPsicologicaEstudiante));
-            
-            if (evaPsiAula.EvaluacionPsicologica == null)
-                throw new EntidadNoEncontradaException(nameof(EvaluacionPsicologica));
+            var unidadId = request.UnidadId;
+            var estudianteId = request.EstudianteId;
+            var dimensionId = request.DimensionId;
 
-            if (evaPsiAula.EvaluacionPsicologica.Id == 2 && request.DimensionId == 1)
-                request.DimensionId = 3;
-            else if (evaPsiAula.EvaluacionPsicologica.Id == 2 && request.DimensionId == 2)
-                request.DimensionId = 4;
-            
-            var respuestasEscalasPsicologicas = await _evaluacionPsicologicaRepository.ResultadosPsicologicosEstudiante(evaPsiEstId, evaPsiAula.EvaluacionPsicologicaId, request.DimensionId) ?? throw new EntidadNoPuedeSerEliminadaPorSusDependenciasException(nameof(EvaluacionPsicologicaEstudiante));
+            var unidad = await _unidadRepository.GetByIdAsync(unidadId);
+            // Encontrar AulaId del estudiante
+            var aula = await _estudianteAulaRepository.AulaPorEstudianteIdYAnio(estudianteId, unidad.Año);
+            // Encontrar Evalucion Psicologica del Aula
+            var evaPsiAula = await _evaluacionPsicologicaAulaRepository.EvaPsiAulaPorAulaIdYUnidadId(aula.Id, unidad.Id);
+            var evaPsiEstId = await _evaluacionPsicologicaEstudianteRepository.EvaPsiEstudianteIdPorEstudianteId((int)evaPsiAula.Id, estudianteId);
 
-            var escalasPsicologicasDto = _mapper.Map<IList<EscalaPsicologicaDto>>(respuestasEscalasPsicologicas);
-            var respuestasEstudianteDto = new RespuestasEstudianteDto{EscalasPsicologicas = escalasPsicologicasDto};
+            var evaPsiId = evaPsiAula.EvaluacionPsicologicaId;
 
-            CalcularResultadosEvaluacionPsicologica(escalasPsicologicasDto);
-            return new Response<RespuestasEstudianteDto>(respuestasEstudianteDto);
-        }
+            var escalasPsicologicas = await _escalaPsicologicaRepository.ObtenerEscalaPorDimensionId((int)evaPsiId, dimensionId);
+            var escalasPsicologicasDto = _mapper.Map<IList<EscalaPsicologicaDto>>(escalasPsicologicas);
+            var respuestasEstudianteDto = new RespuestasEstudianteDto();
+            respuestasEstudianteDto.EscalasPsicologicas = escalasPsicologicasDto;
 
+            // Funcion para poder guardar los resultados en las escalas
+            int countIndicadoresEnInicio = 0, countIndicadoresEnProceso = 0, countIndicadoresSatisfactorio = 0;
+            int countEscalasEnInicio = 0, countEscalasEnProceso = 0, countEscalasSatisfactorio = 0;
 
-
-        private static void CalcularResultadosEvaluacionPsicologica(IList<EscalaPsicologicaDto> escalasPsicologicasDto)
-        {
-            foreach (var escalaDto in escalasPsicologicasDto)
+            foreach (var escalaDto in respuestasEstudianteDto.EscalasPsicologicas)
             {
                 double? promedioEscala = null;
 
@@ -75,27 +84,35 @@ namespace Application.Features.RespuestaPsicologica.Queries
                 {
                     foreach (var indicador in escalaDto.IndicadoresPsicologicos)
                     {
-                        if (indicador != null)
-                        {
-                            indicador.PromedioIndicador = indicador.PreguntasPsicologicas?
-                                .Where(i => i.RespuestasPsicologicas != null && i.RespuestasPsicologicas.Any())
-                                .Sum(i =>
-                                {
-                                    var primeraRespuesta = i?.RespuestasPsicologicas?.FirstOrDefault();
-                                    if (primeraRespuesta != null && double.TryParse(primeraRespuesta.Respuesta, out double respuestaNumero))
-                                        return respuestaNumero;
-                                    return 0.0;
-                                });
-                            indicador.PreguntasPsicologicas = null;
-                        }
+                        indicador.PromedioIndicador = await _indicadorPsicologicoRepository.PromedioIndicadorPsicologicoEstudiante((int)evaPsiEstId, indicador.Id);
+                        // Contar indicadores en cada categoría
+                        if (indicador.PromedioIndicador <= 1)
+                            countIndicadoresEnInicio++;
+                        else if (indicador.PromedioIndicador > 1 && indicador.PromedioIndicador < 3)
+                            countIndicadoresEnProceso++;
+                        else if (indicador.PromedioIndicador >= 3)
+                            countIndicadoresSatisfactorio++;
                     }
-
                     var totalPromedioIndicadores = escalaDto.IndicadoresPsicologicos.Sum(i => i.PromedioIndicador ?? 0.0);
                     promedioEscala = Math.Round(totalPromedioIndicadores / escalaDto.IndicadoresPsicologicos.Count, 4);
+                    // Contar escalas en cada categoría
+                    if (promedioEscala <= 1)
+                        countEscalasEnInicio++;
+                    else if (promedioEscala > 1 && promedioEscala < 3)
+                        countEscalasEnProceso++;
+                    else if (promedioEscala >= 3)
+                        countEscalasSatisfactorio++;
                 }
                 escalaDto.PromedioEscala = promedioEscala;
             }
-        }
+            respuestasEstudianteDto.TotalEscalasEnInicio = countEscalasEnInicio;
+            respuestasEstudianteDto.TotalEscalasEnProceso = countEscalasEnProceso;
+            respuestasEstudianteDto.TotalEscalasSatisfactorio = countEscalasSatisfactorio;
+            respuestasEstudianteDto.TotalIndicadoresEnInicio = countIndicadoresEnInicio;
+            respuestasEstudianteDto.TotalIndicadoresEnProceso = countIndicadoresEnProceso;
+            respuestasEstudianteDto.TotalIndicadoresSatisfactorio = countIndicadoresSatisfactorio;
 
+            return new Response<RespuestasEstudianteDto>(respuestasEstudianteDto);
+        }
     }
 }

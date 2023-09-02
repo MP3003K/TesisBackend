@@ -5,6 +5,14 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("anycors", policy =>
+    {
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    });
+});
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -25,6 +33,7 @@ builder.Services.AddConfigurations(builder.Configuration);
 //Start IoC Dependencies Injections
 builder.Services.AddInjections();
 
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -34,7 +43,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection();
+app.UseCors("anycors");
+
+app.UseHttpsRedirection();
 
 app.UseStaticFiles(); // Esto permite servir archivos estáticos como los de Angular.
 

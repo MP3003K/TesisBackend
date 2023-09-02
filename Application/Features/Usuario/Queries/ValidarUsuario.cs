@@ -1,8 +1,6 @@
-﻿using Application.Exceptions;
-using Application.Wrappers;
+﻿using Application.Wrappers;
 using AutoMapper;
 using Contracts.Repositories;
-using Domain.Entities;
 using DTOs;
 using MediatR;
 using System;
@@ -33,21 +31,14 @@ namespace Application.Features.Usuario.Queries
         }
         public async Task<Response<InformacionUsuarioDto>> Handle(ValidarUsuarioQuery request, CancellationToken cancellationToken)
         {
-            var usuario = await _usuarioRepository.ObtenerUsuario(request.UserName, request.Password) ?? throw new EntidadNoEncontradaException(nameof(Domain.Entities.Usuario));
+            var userName = request.UserName;
+            var password = request.Password;
 
-            if (usuario.Persona is null)
-                throw new EntidadNoEncontradaException(nameof(Persona));
-            if (usuario.RolesUsuarios is null)
-                throw new EntidadNoEncontradaException(nameof(RolUsuario));
-            if (usuario.RolesUsuarios.FirstOrDefault() is null)
-                throw new EntidadNoEncontradaException(nameof(RolUsuario));
-
-            Rol? rol = usuario.RolesUsuarios.FirstOrDefault().Rol;
-
+            var usuario = await _usuarioRepository.ObtenerUsuario(userName, password);
             var informacionUsuarioDto = new InformacionUsuarioDto()
             {
                 Persona = _mapper.Map<PersonaDto>(usuario.Persona),
-                Rol = _mapper.Map<RolDto>(rol)
+                Rol = _mapper.Map<RolDto>(usuario.RolesUsuarios.FirstOrDefault().Rol)
             };
             return new Response<InformacionUsuarioDto>(informacionUsuarioDto);
         }

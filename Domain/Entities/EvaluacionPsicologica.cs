@@ -14,7 +14,7 @@ namespace Domain.Entities
         public string Descripcion { get; private set; }
         public string Tipo { get; private set; }
         public string Estado { get; private set; }
-        public int CantPreguntas { get; private set; } = 0;
+
 
         // Relaciones con otras tablas
         public virtual IList<EvaluacionPsicologicaAula>? EvaluacionesPsicologicasAula { get; private set; }
@@ -23,13 +23,12 @@ namespace Domain.Entities
 
 
         // Funciones
-        public EvaluacionPsicologica(string nombre, string descripcion, string tipo, string estado, int cantPreguntas)
+        public EvaluacionPsicologica(string nombre, string descripcion, string tipo, string estado)
         {
             Nombre = nombre;
             Descripcion = descripcion;
             Tipo = tipo;
             Estado = estado;
-            CantPreguntas = cantPreguntas;
         }
         public void UpdateNombre(string nombre)
         {
@@ -47,17 +46,12 @@ namespace Domain.Entities
         {
             Estado = estado;
         }
-        public void UpdateCantPreguntas(int cantPreguntas)
-        {
-            this.CantPreguntas = cantPreguntas;
-        }
-        public void Update(string nombre, string descripcion, string tipo, string estado, int cantPreguntas)
+        public void Update(string nombre, string descripcion, string tipo, string estado)
         {
             UpdateNombre(nombre);
             UpdateDescripcion(descripcion);
             UpdateTipo(tipo);
             UpdateEstado(estado);
-            UpdateCantPreguntas(cantPreguntas);
         }
     }
 }
